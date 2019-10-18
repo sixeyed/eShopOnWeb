@@ -40,52 +40,15 @@ namespace Microsoft.eShopWeb.Web
 
         public IConfiguration Configuration { get; }
 
-        public void ConfigureDevelopmentServices(IServiceCollection services)
-        {
-            // use in-memory database
-            ConfigureInMemoryDatabases(services);
-
-            // use real database
-            //ConfigureProductionServices(services);
-        }
-
-        private void ConfigureInMemoryDatabases(IServiceCollection services)
-        {
-            // use in-memory database
-            services.AddDbContext<CatalogContext>(c =>
-                c.UseInMemoryDatabase("Catalog"));
-
-            // Add Identity DbContext
-            services.AddDbContext<AppIdentityDbContext>(options =>
-                options.UseInMemoryDatabase("Identity"));
-
-            ConfigureServices(services);
-        }
-
-        public void ConfigureProductionServices(IServiceCollection services)
-        {
-            // use real database
-            // Requires LocalDB which can be installed with SQL Server Express 2016
-            // https://www.microsoft.com/en-us/download/details.aspx?id=54284
-            services.AddDbContext<CatalogContext>(c =>
-                c.UseSqlServer(Configuration.GetConnectionString("CatalogConnection")));
-
-            // Add Identity DbContext
-            services.AddDbContext<AppIdentityDbContext>(options =>
-                options.UseSqlServer(Configuration.GetConnectionString("IdentityConnection")));
-
-            ConfigureServices(services);
-        }
-
-
-
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            ConfigureDatabases(services);
+
             ConfigureCookieSettings(services);
 
             CreateIdentityIfNotCreated(services);
-            
+
             services.AddScoped(typeof(IAsyncRepository<>), typeof(EfRepository<>));
 
             services.AddScoped<ICatalogViewModelService, CachedCatalogViewModelService>();
@@ -114,7 +77,7 @@ namespace Microsoft.eShopWeb.Web
             {
                 options.Conventions.Add(new RouteTokenTransformerConvention(
                          new SlugifyParameterTransformer()));
-                
+
             }
             )
                 .AddRazorPagesOptions(options =>
@@ -144,6 +107,38 @@ namespace Microsoft.eShopWeb.Web
             _services = services; // used to debug registered services
         }
 
+        private void ConfigureDatabases(IServiceCollection services)
+        {
+            var dbProvider = Configuration.GetValue<DbProvider>("Database:Provider");
+            if (dbProvider == DbProvider.InMemory)
+            {
+                ConfigureInMemoryDatabases(services);
+            }
+            else if (dbProvider == DbProvider.SqlServer)
+            {
+                ConfigureSqlServer(services);
+            }
+        }
+
+        private void ConfigureInMemoryDatabases(IServiceCollection services)
+        {
+            services.AddDbContext<CatalogContext>(c =>
+                c.UseInMemoryDatabase("Catalog"));
+
+            services.AddDbContext<AppIdentityDbContext>(options =>
+                options.UseInMemoryDatabase("Identity"));
+        }
+
+
+        public void ConfigureSqlServer(IServiceCollection services)
+        {
+            services.AddDbContext<CatalogContext>(c =>
+                c.UseSqlServer(Configuration.GetConnectionString("CatalogConnection")));
+
+            services.AddDbContext<AppIdentityDbContext>(options =>
+                options.UseSqlServer(Configuration.GetConnectionString("IdentityConnection")));
+        }
+
         private static void CreateIdentityIfNotCreated(IServiceCollection services)
         {
             var sp = services.BuildServiceProvider();
@@ -151,7 +146,7 @@ namespace Microsoft.eShopWeb.Web
             {
                 var existingUserManager = scope.ServiceProvider
                     .GetService<UserManager<ApplicationUser>>();
-                if(existingUserManager == null)
+                if (existingUserManager == null)
                 {
                     services.AddIdentity<ApplicationUser, IdentityRole>()
                         .AddDefaultUI(UIFramework.Bootstrap4)
