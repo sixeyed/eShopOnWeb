@@ -11,6 +11,7 @@ namespace Microsoft.eShopWeb.Infrastructure.Data
     {
         public CatalogContext(DbContextOptions<CatalogContext> options) : base(options)
         {
+            Database.EnsureCreated();
         }
 
         public DbSet<Basket> Baskets { get; set; }
@@ -19,7 +20,7 @@ namespace Microsoft.eShopWeb.Infrastructure.Data
         public DbSet<CatalogType> CatalogTypes { get; set; }
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
-        public DbSet<BasketItem> BasketItems { get; set; }
+        public DbSet<BasketItem> BasketItems { get; set; }        
 
         protected override void OnModelCreating(ModelBuilder builder)
         {

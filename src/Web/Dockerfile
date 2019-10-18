@@ -1,13 +1,13 @@
 FROM mcr.microsoft.com/dotnet/core/sdk:2.2 AS build
 
 WORKDIR /src
-COPY ./ApplicationCore/ApplicationCore.csproj ./ApplicationCore/
-COPY ./Infrastructure/Infrastructure.csproj ./Infrastructure/
-COPY ./Web/Web.csproj ./Web/
+COPY ./src/ApplicationCore/ApplicationCore.csproj ./ApplicationCore/
+COPY ./src/Infrastructure/Infrastructure.csproj ./Infrastructure/
+COPY ./src/Web/Web.csproj ./Web/
 
 RUN dotnet restore ./Web/Web.csproj
 
-COPY . .
+COPY ./src/ .
 WORKDIR /src/Web
 RUN dotnet publish -c Release -o /app
 
